@@ -5,23 +5,27 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ItemData {
   final String id;
   final String fecha;
   final String hora;
   final bool estatus;
+  final String id_cliente;
 
   ItemData({
     required this.id,
     required this.fecha,
     required this.hora,
     required this.estatus,
+    required this.id_cliente,
   });
 }
 
 class TableData extends ChangeNotifier {
   final List<ItemData> _items = [];
+  String url = 'https://siproe.onrender.com/api/';
 
   List<ItemData> get items => List.unmodifiable(_items);
 
@@ -92,7 +96,8 @@ Future<void> CargaDatos(BuildContext context) async {
             id: item['id'].toString(),
             fecha: item['fecha'],
             hora: item['hora'],
-            estatus: item['estatus']
+            estatus: item['estatus'],
+            id_cliente: item['id_cliente']?.toString() ?? '',
           ),
         );
       }
@@ -111,6 +116,18 @@ Future<void> CargaDatos(BuildContext context) async {
   }
 }
 
+Future<Map<String, dynamic>?> obtenerSesion() async {
+  final prefs = await SharedPreferences.getInstance();
+  final id = prefs.getString('id');
+  final nombreUser = prefs.getString('nombre_user');
+  final playerId = prefs.getString('playerId');
+
+  if (id != null && nombreUser != null) {
+    return {'id': id, 'nombre_user': nombreUser};
+  }
+  return null;
+}
+
 // ignore: non_constant_identifier_names
 Future<void> EliminarCita(BuildContext context, String id) async {
   try {
@@ -123,7 +140,9 @@ Future<void> EliminarCita(BuildContext context, String id) async {
     );
 
     if (response.statusCode == 200) {
-      CargaDatos(context);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        CargaDatos(context);
+      });
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error al eliminar cita')),
@@ -147,15 +166,72 @@ class _AgendaBarberState extends State<AgendaScreen> {
   final TextEditingController _fechaController = TextEditingController();
   final TextEditingController _horaController = TextEditingController();
   DateTime? _fechaSeleccionada;
+  late Timer _timer;
+
+  void ejecutaTimer() {
+    _timer = Timer.periodic(Duration(seconds: 20), (Timer timer) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        CargaDatos(context);
+      });
+    });
+  }
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       CargaDatos(context);
+      obtenerSesion().then((session) {
+        if (session == null) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => MyHomePage()),
+          );
+        }
+      });
     });
+    ejecutaTimer();
   }
 
+  Future<void> mostrarDetallesCita(BuildContext context, String id) async {
+    try {
+      var url = Uri.parse('https://siproe.onrender.com/api/login/obtenerDetailCita/$id');
+      
+      final response = await http.get(
+        url,
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if(response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+
+        showDialog(
+          context: context,
+          builder: (_) => AlertDialog(
+              title: Text('Detalles de la Cita'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('Nombre: ${data['nombre_user']}'),
+                  Text('Fecha de Creación: ${data['fecha_creacion']}')
+                ],
+              ),
+            ),
+          );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al obtener detalles de la cita')),
+        );
+      }
+    } catch (e) {
+      print('Error al obtener detalles de la cita: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al obtener detalles de la cita')),
+      );
+    }
+  }
+
+  // ignore: non_constant_identifier_names
   Future<void> AgregarAgenda(
     BuildContext context,
     TextEditingController fechaController,
@@ -171,6 +247,17 @@ class _AgendaBarberState extends State<AgendaScreen> {
     }
 
     final fechaFormateada = DateFormat('yyyy-MM-dd').format(_fechaSeleccionada!);
+    final tableData = Provider.of<TableData>(context, listen: false);
+
+    final existeCita = tableData.items.any((item) =>
+        item.fecha == fechaFormateada && item.hora == hora);
+
+    if (existeCita) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Ya existe una cita para esta fecha y hora')),
+      );
+      return;
+    }
 
     try {
       var url = Uri.parse('https://siproe.onrender.com/api/agenda/crearAgenda');
@@ -215,6 +302,22 @@ class _AgendaBarberState extends State<AgendaScreen> {
     }
   }
 
+  Future<void> _logout() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear(); 
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => MyHomePage()),
+    );
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Sesión cerrada')),
+    );
+
+    _timer.cancel();
+  }
+
   @override
   void dispose() {
     _fechaController.dispose();
@@ -235,14 +338,7 @@ class _AgendaBarberState extends State<AgendaScreen> {
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () {
-              if (Navigator.canPop(context)) {
-                Navigator.pop(context);
-              } else {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => MyHomePage()),
-                );
-              }
+             _logout();
             },
           ),
         ],
@@ -279,7 +375,7 @@ class _AgendaBarberState extends State<AgendaScreen> {
                       TextFormField(
                         controller: _horaController,
                         decoration: InputDecoration(
-                          labelText: 'Hora (Ejemplo: 10:00 AM)',
+                          labelText: 'Hora (Ejemplo: 10:00 AM/PM)',
                           border: OutlineInputBorder(),
                           suffixIcon: Icon(Icons.access_time),
                         ),
@@ -301,9 +397,9 @@ class _AgendaBarberState extends State<AgendaScreen> {
               SingleChildScrollView(                
                 scrollDirection: Axis.vertical,
                 child: Padding(
-                  padding: const EdgeInsets.only(right: 16.0), // Espacio al final
+                  padding: const EdgeInsets.only(right: 15.0), // Espacio al final
                   child: DataTable(
-                    columnSpacing: 36,
+                    columnSpacing: 33,
                     columns: const [
                       DataColumn(label: Text('Fecha')),
                       DataColumn(label: Text('Hora')),
@@ -312,7 +408,18 @@ class _AgendaBarberState extends State<AgendaScreen> {
                     ],
                     rows: tableData.items.map<DataRow>((item) {
                       return DataRow(cells: [
-                        DataCell(Text(formatFechaTabla(item.fecha))),
+                        DataCell(
+                          GestureDetector(
+                            onTap: () {
+                              if(item.estatus == true) {
+                                mostrarDetallesCita(context, item.id_cliente);
+                              }
+                            },
+                            child: Text(
+                              formatFechaTabla(item.fecha)
+                              )
+                            ),
+                        ),
                         DataCell(Text(item.hora)),
                         DataCell(Text(item.estatus == false ? "Sin Agendar" : "Agendada")),
                         DataCell(
