@@ -31,7 +31,7 @@ class CalendarBarberState extends State<NavigationExample> {
     final ThemeData theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Bienvenidos a Barberia Alex'),
+        title: const Text('Bienvenidos a Barberia Axel'),
         backgroundColor: Color.fromARGB(255, 1, 100, 87),
         actions: [
           IconButton(

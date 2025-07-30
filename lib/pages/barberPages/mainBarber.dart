@@ -220,9 +220,9 @@ class PantallaInicioState extends State<PantallaInicio> {
           _agendaPorDia = tempAgenda;
         });
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Información cargada')),
-        );
+        // ScaffoldMessenger.of(context).showSnackBar(
+        //   SnackBar(content: Text('Información cargada')),
+        // );
 
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -245,7 +245,7 @@ class PantallaInicioState extends State<PantallaInicio> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Bienvenido a Barberia Alex'),
+        title: const Text('Bienvenido a Barberia Axel'),
         backgroundColor: Color.fromARGB(255, 1, 100, 87),
         automaticallyImplyLeading: true,
         actions: [

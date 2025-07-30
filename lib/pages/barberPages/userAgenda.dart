@@ -2,6 +2,9 @@ import 'package:ameriapp/pages/barberPages/citasUser.dart';
 import 'package:ameriapp/pages/barberPages/mainBarber.dart';
 import 'package:flutter/material.dart';
 
+// Ensure MisCitasScreen is imported from its correct file
+// If it's defined in citasUser.dart, make sure the class exists there
+
 class AgendaUserScreen extends StatefulWidget {
   const AgendaUserScreen({super.key});
 
@@ -15,7 +18,7 @@ class _AgendaUserScreenState extends State<AgendaUserScreen> {
   // Lista de pantallas que se alternan en el BottomNavigationBar
   final List<Widget> _pages = [
     const PantallaInicio(),
-    const MisCitasScreen(),
+    AgendasBarber(),
   ];
 
   void _onItemTapped(int index) {

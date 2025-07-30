@@ -235,7 +235,7 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Multi Servicios'),
+        title: Text('Barberia Axel'),
         backgroundColor: Color.fromARGB(255, 1, 100, 87),
       ),
       body: Padding(

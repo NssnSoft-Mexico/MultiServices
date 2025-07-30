@@ -1,7 +1,5 @@
-// ignore: file_names
 import 'dart:async';
 import 'dart:convert';
-
 import 'package:ameriapp/main.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -25,35 +23,11 @@ class ItemData {
 
 class TableData extends ChangeNotifier {
   final List<ItemData> _items = [];
-  String url = 'https://siproe.onrender.com/api/';
 
   List<ItemData> get items => List.unmodifiable(_items);
 
   void agregarItem(ItemData item) {
     _items.add(item);
-    notifyListeners();
-  }
-
-  Future<void> eliminarItem(BuildContext context, String id, String? idUser) async {
-    try {
-      var url = Uri.parse('https://siproe.onrender.com/api/agenda/borrarCita/$id');
-      final response = await http.delete(
-        url,
-        headers: {'Content-Type': 'application/json'},
-      );
-
-      if (response.statusCode == 200) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          CargaDatos(context, idUser!);
-        });
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al eliminar cita')),
-        );
-      }
-    } catch (e) {
-      print('Error al conectar con la API: $e');
-    }
     notifyListeners();
   }
 
@@ -63,25 +37,35 @@ class TableData extends ChangeNotifier {
   }
 }
 
-class MisCitasScreen extends StatefulWidget {
-  const MisCitasScreen({super.key});
-
-  @override
-  State<MisCitasScreen> createState() => MisCitasScreenState();
+void main() {
+  runApp(
+    ChangeNotifierProvider(
+      create: (_) => TableData(),
+      child: AgendasBarber(),
+    ),
+  );
 }
 
-String formatFechaTabla(String fechaTexto) {
-  try {
-    final DateTime fecha = DateTime.parse(fechaTexto);
-    return DateFormat('dd/MM/yyyy').format(fecha);
-  } catch (e) {
-    return fechaTexto;
+class AgendasBarber extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (_) => TableData(),
+      child: MaterialApp(
+        title: 'Agenda Barber',
+        theme: ThemeData(primarySwatch: Colors.blue),
+        home: AgendasScreen(),
+      ),
+    );
   }
 }
 
+class AgendasScreen extends StatefulWidget {
+  @override
+  _AgendasBarberState createState() => _AgendasBarberState();
+}
+
 Future<void> CargaDatos(BuildContext context, String id) async {
-  print("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
-  print("Cargando datos para el ID: $id");
   try {
     var url = Uri.parse('https://siproe.onrender.com/api/agenda/obtenerAgendaById/$id');
     // var url = Uri.parse('http://10.0.2.2:8080/api/agenda/obtenerAgenda');
@@ -92,9 +76,6 @@ Future<void> CargaDatos(BuildContext context, String id) async {
     );
 
     if (response.statusCode == 200) {
-      print("Datos cargados correctamente");
-      // final data = jsonDecode(response.body);
-      print(response.body);
       final List<dynamic> data = jsonDecode(response.body);
       final tableData = Provider.of<TableData>(context, listen: false);
       tableData.limpiar();
@@ -109,10 +90,9 @@ Future<void> CargaDatos(BuildContext context, String id) async {
           ),
         );
       }
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Información cargada')),
-      );
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   SnackBar(content: Text('Información cargada')),
+      // );
     } else {
       // ignore: use_build_context_synchronously
       ScaffoldMessenger.of(context).showSnackBar(
@@ -124,61 +104,158 @@ Future<void> CargaDatos(BuildContext context, String id) async {
   }
 }
 
+Future<Map<String, dynamic>?> obtenerSesion() async {
+  final prefs = await SharedPreferences.getInstance();
+  final id = prefs.getString('id');
+  final nombreUser = prefs.getString('nombre_user');
 
-class MisCitasScreenState extends State<MisCitasScreen> {
+  if (id != null && nombreUser != null) {
+    return {'id': id, 'nombre_user': nombreUser};
+  }
+  return null;
+}
 
+String formatFechaTabla(String fechaTexto) {
+  try {
+    final DateTime fecha = DateTime.parse(fechaTexto);
+    return DateFormat('dd/MM/yyyy').format(fecha);
+  } catch (e) {
+    return fechaTexto;
+  }
+}
+class _AgendasBarberState extends State<AgendasScreen> {
+  final TextEditingController _fechaController = TextEditingController();
+  final TextEditingController _horaController = TextEditingController();
+  DateTime? _fechaSeleccionada;
   late Timer _timer;
-  String? idUser = '';
-
-  Future<Map<String, dynamic>?> obtenerSesion() async {
-    final prefs = await SharedPreferences.getInstance();
-    final id = prefs.getString('id');
-    final nombreUser = prefs.getString('nombre_user');
-
-    setState(() {
-      if (nombreUser != null) {
-        idUser = id;
-      }
-    });
-
-
-    if (id != null && nombreUser != null) {
-      return {'id': id, 'nombre_user': nombreUser};
-    }
-    return null;
-  }
-
-  void ejecutaTimer() {
-    _timer = Timer.periodic(Duration(seconds: 20), (Timer timer) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        CargaDatos(context, idUser!);
-      });
-    });
-  }
+  String idUser = "";
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
 
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final session = await obtenerSesion();
-
-      if(!mounted) return;
-
-      if (session == null) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => MyHomePage()),
-        );
-      } else {
-        idUser = session['id'];
-
-        if(idUser != null) {
-          await CargaDatos(context, idUser!);
-          ejecutaTimer();
+      obtenerSesion().then((session) {
+        if (session == null) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => MyHomePage()),
+          );
+        } else {
+          idUser = session['id'];
+          CargaDatos(context, idUser);
         }
-      }
+      });
     });
+  }
+
+  Future<void> mostrarDetallesCita(BuildContext context, String id) async {
+    try {
+      var url = Uri.parse('https://siproe.onrender.com/api/login/obtenerDetailCita/$id');
+      
+      final response = await http.get(
+        url,
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if(response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+
+        showDialog(
+          context: context,
+          builder: (_) => AlertDialog(
+              title: Text('Detalles de la Cita'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('Nombre: ${data['nombre_user']}'),
+                  Text('Fecha de Creación: ${data['fecha_creacion']}')
+                ],
+              ),
+            ),
+          );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al obtener detalles de la cita')),
+        );
+      }
+    } catch (e) {
+      print('Error al obtener detalles de la cita: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al obtener detalles de la cita')),
+      );
+    }
+  }
+
+  // ignore: non_constant_identifier_names
+  Future<void> AgregarAgenda(
+    BuildContext context,
+    TextEditingController fechaController,
+    TextEditingController horaController,
+  ) async {
+    final hora = _horaController.text.trim();
+
+    if (_fechaSeleccionada == null || hora.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Completa todos los campos')),
+      );
+      return;
+    }
+
+    final fechaFormateada = DateFormat('yyyy-MM-dd').format(_fechaSeleccionada!);
+    final tableData = Provider.of<TableData>(context, listen: false);
+
+    final existeCita = tableData.items.any((item) =>
+        item.fecha == fechaFormateada && item.hora == hora);
+
+    if (existeCita) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Ya existe una cita para esta fecha y hora')),
+      );
+      return;
+    }
+
+    try {
+      var url = Uri.parse('https://siproe.onrender.com/api/agenda/crearAgenda');
+      // var url = Uri.parse('http://10.0.2.2:8080/api/agenda/crearAgenda');
+
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          "fecha": fechaFormateada,
+          "hora": hora,
+          "id_cliente": null,
+          "estatus": false,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        CargaDatos(context, idUser);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: ${response.statusCode}')),
+        );
+      }
+    } catch (e) {
+      print('Error al conectar con la API: $e');
+    }
+  }
+
+  Future<void> _seleccionarFecha(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(2024),
+      lastDate: DateTime(2030),
+    );
+
+    if (picked != null) {
+      setState(() {
+        _fechaSeleccionada = picked;
+        _fechaController.text = DateFormat('dd/MM/yyyy').format(picked);
+      });
+    }
   }
 
   Future<void> _logout() async {
@@ -198,20 +275,61 @@ class MisCitasScreenState extends State<MisCitasScreen> {
   }
 
   @override
+  void dispose() {
+    _fechaController.dispose();
+    _horaController.dispose();
+    _timer.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final tableData = Provider.of<TableData>(context);
+
     return Scaffold(
-    appBar: AppBar(
-        title: const Text('Bienvenido a Barberia Alex'),
+      appBar: AppBar(
+        title: const Text('Bienvenido a Barberia Axel'),
         backgroundColor: Color.fromARGB(255, 1, 100, 87),
         automaticallyImplyLeading: true,
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () {
-              _logout();
+             _logout();
             },
           ),
         ],
+      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              SingleChildScrollView(                
+                scrollDirection: Axis.vertical,
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 15.0),
+                  child: DataTable(
+                    columnSpacing: 33,
+                    columns: const [
+                      DataColumn(label: Text('Fecha')),
+                      DataColumn(label: Text('Hora')),
+                      DataColumn(label: Text('Estatus')),
+                    ],
+                    rows: tableData.items.map<DataRow>((item) {
+                      return DataRow(cells: [
+                        DataCell(Text(formatFechaTabla(item.fecha))),
+                        DataCell(Text(item.hora)),
+                        DataCell(Text(item.estatus == false ? "Sin Agendar" : "Agendada")),
+                      ]);
+                    }).toList(),
+                  ),
+                ),
+              )
+            ],
+          ),
+        ),
       ),
     );
   }

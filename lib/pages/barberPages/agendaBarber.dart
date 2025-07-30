@@ -101,10 +101,6 @@ Future<void> CargaDatos(BuildContext context) async {
           ),
         );
       }
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Información cargada')),
-      );
     } else {
       // ignore: use_build_context_synchronously
       ScaffoldMessenger.of(context).showSnackBar(
@@ -322,6 +318,7 @@ class _AgendaBarberState extends State<AgendaScreen> {
   void dispose() {
     _fechaController.dispose();
     _horaController.dispose();
+    _timer.cancel();
     super.dispose();
   }
 
@@ -331,7 +328,7 @@ class _AgendaBarberState extends State<AgendaScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Bienvenido a Barberia Alex'),
+        title: const Text('Bienvenido a Barberia Axel'),
         backgroundColor: Color.fromARGB(255, 1, 100, 87),
         automaticallyImplyLeading: true,
         actions: [
