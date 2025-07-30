@@ -16,12 +16,14 @@ dependencies:
   firebase_core: ^2.24.0
   firebase_messaging: ^14.7.0
   onesignal_flutter: ^5.1.0
+  permission_handler: ^11.3.1
 
   flutter:
     sdk: flutter
 
   cupertino_icons: ^1.0.8
   quickalert: ^1.1.0
+  url_launcher: ^6.3.2
 
 dev_dependencies:
   flutter_test:

@@ -1,13 +1,12 @@
-  import 'dart:async';
-  import 'dart:convert';
-  import 'package:ameriapp/main.dart';
-  import 'package:flutter/material.dart';
-  import 'package:http/http.dart' as http;
-  import 'package:quickalert/models/quickalert_type.dart';
-  import 'package:quickalert/widgets/quickalert_dialog.dart';
-  import 'package:shared_preferences/shared_preferences.dart';
-  import 'package:table_calendar/table_calendar.dart';
-
+import 'dart:async';
+import 'dart:convert';
+import 'package:ameriapp/main.dart';
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:quickalert/models/quickalert_type.dart';
+import 'package:quickalert/widgets/quickalert_dialog.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:table_calendar/table_calendar.dart';
 
 class Horario {
   final int id;
@@ -16,7 +15,7 @@ class Horario {
   Horario({required this.id, required this.hora});
 }
 class PantallaInicio extends StatefulWidget {
-  const PantallaInicio();
+  const PantallaInicio({super.key});
 
   @override
   State<PantallaInicio> createState() => PantallaInicioState();
@@ -119,6 +118,7 @@ class PantallaInicioState extends State<PantallaInicio> {
 
       if (response.statusCode == 200) {
         QuickAlert.show(
+          // ignore: use_build_context_synchronously
           context: context,
           type: QuickAlertType.success,
           text: 'Cita agendada exitosamente.',
@@ -162,10 +162,8 @@ class PantallaInicioState extends State<PantallaInicio> {
 
   Future<void> _crearCita() async {
 
-    if (_horarioSeleccionado == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Por favor, selecciona un horario.')),
-      );
+    if (_horarioSeleccionado?.hora == null || _horarioSeleccionado!.hora.isEmpty) {
+      print("⛔ Hora no válida, cancelando");
       return;
     }
 
@@ -350,8 +348,8 @@ class PantallaInicioState extends State<PantallaInicio> {
             ElevatedButton(
               onPressed: _horarioSeleccionado == null
                   ? null
-                  : () {
-                      _crearCita();
+                  : () async {
+                      await _crearCita();
 
                       setState(() {
                         _horarioSeleccionado = null;

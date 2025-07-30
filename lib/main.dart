@@ -4,6 +4,7 @@ import 'package:ameriapp/pages/barberPages/userAgenda.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
 import 'package:quickalert/quickalert.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
@@ -12,22 +13,24 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
 
-  // Inicializar OneSignal con la nueva API (versión 5.x)
   OneSignal.initialize('09c94a3b-6d81-4003-97b0-a2fd08c7242d');
-
-  // Solicitar permiso para notificaciones
   await OneSignal.Notifications.requestPermission(true);
 
-  // Manejo cuando se recibe una notificación en foreground
   OneSignal.Notifications.addForegroundWillDisplayListener((event) {
-    event.preventDefault(); // Opcional
-    event.notification.display(); // Mostrar notificación manualmente
+    event.preventDefault();
+    event.notification.display();
   });
 
-  // Obtener Player ID (token de OneSignal)
   final playerId = OneSignal.User.pushSubscription.id;
 
-  runApp(const MyApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => TableData()),
+      ],
+      child: MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
