@@ -57,6 +57,8 @@ void main() {
 }
 
 class AgendaBarber extends StatelessWidget {
+  const AgendaBarber({super.key});
+
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
@@ -116,7 +118,6 @@ Future<Map<String, dynamic>?> obtenerSesion() async {
   final prefs = await SharedPreferences.getInstance();
   final id = prefs.getString('id');
   final nombreUser = prefs.getString('nombre_user');
-  final playerId = prefs.getString('playerId');
 
   if (id != null && nombreUser != null) {
     return {'id': id, 'nombre_user': nombreUser};
@@ -272,6 +273,9 @@ class _AgendaBarberState extends State<AgendaScreen> {
 
       if (response.statusCode == 200) {
         CargaDatos(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Horario agregado')),
+        );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error: ${response.statusCode}')),

@@ -90,9 +90,10 @@ Future<void> CargaDatos(BuildContext context, String id) async {
           ),
         );
       }
-      // ScaffoldMessenger.of(context).showSnackBar(
-      //   SnackBar(content: Text('Información cargada')),
-      // );
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Información cargada')),
+      );
     } else {
       // ignore: use_build_context_synchronously
       ScaffoldMessenger.of(context).showSnackBar(
@@ -124,10 +125,7 @@ String formatFechaTabla(String fechaTexto) {
   }
 }
 class _AgendasBarberState extends State<AgendasScreen> {
-  final TextEditingController _fechaController = TextEditingController();
-  final TextEditingController _horaController = TextEditingController();
   DateTime? _fechaSeleccionada;
-  late Timer _timer;
   String idUser = "";
 
   @override
@@ -187,77 +185,6 @@ class _AgendasBarberState extends State<AgendasScreen> {
     }
   }
 
-  // ignore: non_constant_identifier_names
-  Future<void> AgregarAgenda(
-    BuildContext context,
-    TextEditingController fechaController,
-    TextEditingController horaController,
-  ) async {
-    final hora = _horaController.text.trim();
-
-    if (_fechaSeleccionada == null || hora.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Completa todos los campos')),
-      );
-      return;
-    }
-
-    final fechaFormateada = DateFormat('yyyy-MM-dd').format(_fechaSeleccionada!);
-    final tableData = Provider.of<TableData>(context, listen: false);
-
-    final existeCita = tableData.items.any((item) =>
-        item.fecha == fechaFormateada && item.hora == hora);
-
-    if (existeCita) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Ya existe una cita para esta fecha y hora')),
-      );
-      return;
-    }
-
-    try {
-      var url = Uri.parse('https://siproe.onrender.com/api/agenda/crearAgenda');
-      // var url = Uri.parse('http://10.0.2.2:8080/api/agenda/crearAgenda');
-
-      final response = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          "fecha": fechaFormateada,
-          "hora": hora,
-          "id_cliente": null,
-          "estatus": false,
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        CargaDatos(context, idUser);
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${response.statusCode}')),
-        );
-      }
-    } catch (e) {
-      print('Error al conectar con la API: $e');
-    }
-  }
-
-  Future<void> _seleccionarFecha(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(2024),
-      lastDate: DateTime(2030),
-    );
-
-    if (picked != null) {
-      setState(() {
-        _fechaSeleccionada = picked;
-        _fechaController.text = DateFormat('dd/MM/yyyy').format(picked);
-      });
-    }
-  }
-
   Future<void> _logout() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear(); 
@@ -270,15 +197,10 @@ class _AgendasBarberState extends State<AgendasScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Sesión cerrada')),
     );
-
-    _timer.cancel();
   }
 
   @override
   void dispose() {
-    _fechaController.dispose();
-    _horaController.dispose();
-    _timer.cancel();
     super.dispose();
   }
 

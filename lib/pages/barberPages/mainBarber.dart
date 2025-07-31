@@ -117,12 +117,7 @@ class PantallaInicioState extends State<PantallaInicio> {
       );
 
       if (response.statusCode == 200) {
-        QuickAlert.show(
-          // ignore: use_build_context_synchronously
-          context: context,
-          type: QuickAlertType.success,
-          text: 'Cita agendada exitosamente.',
-        );
+        print("Notificación Enviada");
       } else {
         print('❌ Error al enviar al admin: ${response.statusCode}');
       }
@@ -181,6 +176,12 @@ class PantallaInicioState extends State<PantallaInicio> {
 
       if (response.statusCode == 200) {
 
+        QuickAlert.show(
+          context: context,
+          type: QuickAlertType.success,
+          text: 'Cita agendada exitosamente',
+        );
+
         await _getPlayerId();
         await sendToAdmin();
         await _cargarDatos(context);
@@ -220,9 +221,9 @@ class PantallaInicioState extends State<PantallaInicio> {
           _agendaPorDia = tempAgenda;
         });
 
-        // ScaffoldMessenger.of(context).showSnackBar(
-        //   SnackBar(content: Text('Información cargada')),
-        // );
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Información cargada')),
+        );
 
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -267,6 +268,7 @@ class PantallaInicioState extends State<PantallaInicio> {
                 focusedDay: _selectedDay,
                 firstDay: DateTime.now(),
                 lastDay: DateTime.utc(2030, 12, 31),
+                locale: 'es_ES',
                 selectedDayPredicate: (day) => isSameDay(day, _selectedDay),
                 onDaySelected: (selected, focused) {
                   setState(() {
@@ -355,7 +357,7 @@ class PantallaInicioState extends State<PantallaInicio> {
                         _horarioSeleccionado = null;
                       });
                     },
-              child: Text('Crear cita'),
+              child: Text('Agendar cita'),
             ),
             SizedBox(height: 10)
           ],

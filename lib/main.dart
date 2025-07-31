@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:quickalert/quickalert.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -39,6 +40,13 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      localizationsDelegates: [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('es', '')
+      ],
       title: 'Ameri-App',
       home: MyHomePage(),
     );
@@ -105,10 +113,6 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void _login() async {
-
-    // FirebaseMessaging messaging = FirebaseMessaging.instance;
-    // String? token = await messaging.getToken();
-    // print("Firebase Token:++++++++++++++++++++++++++ $token");
         
     String usuario = _userController.text;
     String pass = _passController.text;
