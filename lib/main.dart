@@ -22,8 +22,6 @@ void main() async {
     event.notification.display();
   });
 
-  final playerId = OneSignal.User.pushSubscription.id;
-
   runApp(
     MultiProvider(
       providers: [

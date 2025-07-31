@@ -125,7 +125,6 @@ String formatFechaTabla(String fechaTexto) {
   }
 }
 class _AgendasBarberState extends State<AgendasScreen> {
-  DateTime? _fechaSeleccionada;
   String idUser = "";
 
   @override
