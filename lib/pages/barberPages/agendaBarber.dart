@@ -12,16 +12,18 @@ class ItemData {
   final String fecha;
   final String hora;
   final bool estatus;
-  final String id_cliente;
+  final String idCliente;
 
   ItemData({
     required this.id,
     required this.fecha,
     required this.hora,
     required this.estatus,
-    required this.id_cliente,
+    required this.idCliente,
   });
 }
+
+String TokenSession = "";
 
 class TableData extends ChangeNotifier {
   final List<ItemData> _items = [];
@@ -77,6 +79,47 @@ class AgendaScreen extends StatefulWidget {
   _AgendaBarberState createState() => _AgendaBarberState();
 }
 
+Future<Map<String, dynamic>?> obtenerSesion() async {
+  final prefs = await SharedPreferences.getInstance();
+  final id = prefs.getString('id');
+  final nombreUser = prefs.getString('nombre_user');
+  final token = prefs.getString('token');
+
+  TokenSession = token!;
+
+  if (id != null && nombreUser != null) {
+    return {'id': id, 'nombre_user': nombreUser, 'token': token};
+  }
+  return null;
+}
+
+// ignore: non_constant_identifier_names
+Future<void> EliminarCita(BuildContext context, String id) async {
+  try {
+    var url = Uri.parse('https://siproe.onrender.com/api/agenda/borrarCita/$id');
+    // var url = Uri.parse('http://10.0.2.2:8080/api/agenda/borrarCita/$id');
+
+    final response = await http.delete(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $TokenSession'},
+    );
+
+    if (response.statusCode == 200) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        CargaDatos(context);
+      });
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al eliminar cita')),
+      );
+    }
+  } catch (e) {
+    print('Error al conectar con la API: $e');
+  }
+}
+
 Future<void> CargaDatos(BuildContext context) async {
   try {
     var url = Uri.parse('https://siproe.onrender.com/api/agenda/obtenerAgenda');
@@ -84,7 +127,9 @@ Future<void> CargaDatos(BuildContext context) async {
 
     final response = await http.get(
       url,
-      headers: {'Content-Type': 'application/json'},
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $TokenSession'},
     );
 
     if (response.statusCode == 200) {
@@ -99,7 +144,7 @@ Future<void> CargaDatos(BuildContext context) async {
             fecha: item['fecha'],
             hora: item['hora'],
             estatus: item['estatus'],
-            id_cliente: item['id_cliente']?.toString() ?? '',
+            idCliente: item['idCliente']?.toString() ?? '',
           ),
         );
       }
@@ -107,42 +152,6 @@ Future<void> CargaDatos(BuildContext context) async {
       // ignore: use_build_context_synchronously
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error del servidor: ${response.statusCode}')),
-      );
-    }
-  } catch (e) {
-    print('Error al conectar con la API: $e');
-  }
-}
-
-Future<Map<String, dynamic>?> obtenerSesion() async {
-  final prefs = await SharedPreferences.getInstance();
-  final id = prefs.getString('id');
-  final nombreUser = prefs.getString('nombre_user');
-
-  if (id != null && nombreUser != null) {
-    return {'id': id, 'nombre_user': nombreUser};
-  }
-  return null;
-}
-
-// ignore: non_constant_identifier_names
-Future<void> EliminarCita(BuildContext context, String id) async {
-  try {
-    var url = Uri.parse('https://siproe.onrender.com/api/agenda/borrarCita/$id');
-    // var url = Uri.parse('http://10.0.2.2:8080/api/agenda/borrarCita/$id');
-
-    final response = await http.delete(
-      url,
-      headers: {'Content-Type': 'application/json'},
-    );
-
-    if (response.statusCode == 200) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        CargaDatos(context);
-      });
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al eliminar cita')),
       );
     }
   } catch (e) {
@@ -164,6 +173,7 @@ class _AgendaBarberState extends State<AgendaScreen> {
   final TextEditingController _horaController = TextEditingController();
   DateTime? _fechaSeleccionada;
   late Timer _timer;
+  String TokenObtenido = '';
 
   void ejecutaTimer() {
     _timer = Timer.periodic(Duration(seconds: 20), (Timer timer) {
@@ -177,13 +187,15 @@ class _AgendaBarberState extends State<AgendaScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      CargaDatos(context);
       obtenerSesion().then((session) {
         if (session == null) {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (context) => MyHomePage()),
           );
+        } else {
+          TokenObtenido = session['token'];
+          CargaDatos(context);
         }
       });
     });
@@ -196,7 +208,10 @@ class _AgendaBarberState extends State<AgendaScreen> {
       
       final response = await http.get(
         url,
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $TokenObtenido'
+        },
       );
 
       if(response.statusCode == 200) {
@@ -262,7 +277,10 @@ class _AgendaBarberState extends State<AgendaScreen> {
 
       final response = await http.post(
         url,
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $TokenObtenido'
+        },
         body: jsonEncode({
           "fecha": fechaFormateada,
           "hora": hora,
@@ -332,8 +350,15 @@ class _AgendaBarberState extends State<AgendaScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Bienvenido a Barberia Axel'),
-        backgroundColor: Color.fromARGB(255, 1, 100, 87),
+        title: const Text(
+          'Barberia Axel',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 20.0,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        backgroundColor: Color.fromARGB(255, 0, 0, 0),
         automaticallyImplyLeading: true,
         actions: [
           IconButton(
@@ -413,7 +438,7 @@ class _AgendaBarberState extends State<AgendaScreen> {
                           GestureDetector(
                             onTap: () {
                               if(item.estatus == true) {
-                                mostrarDetallesCita(context, item.id_cliente);
+                                mostrarDetallesCita(context, item.idCliente);
                               }
                             },
                             child: Text(

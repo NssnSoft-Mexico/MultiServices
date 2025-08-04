@@ -32,9 +32,11 @@ class _AgendaUserScreenState extends State<AgendaUserScreen> {
     return Scaffold(
       body: _pages[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
+        backgroundColor: Color.fromARGB(255, 0, 0, 0),
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
-        selectedItemColor: Colors.teal[800],
+        selectedItemColor: const Color.fromARGB(255, 235, 235, 235),
+        unselectedItemColor: const Color.fromARGB(255, 235, 235, 235),
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home),

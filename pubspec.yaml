@@ -1,5 +1,5 @@
 name: ameriapp
-description: "A new Flutter project."
+description: "Proyecto de Flutter y Dart para una barberia."
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -7,34 +7,39 @@ environment:
   sdk: ^3.8.1
 
 dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+  flutter_localizations:
+    sdk: flutter
+
   http: ^0.13.6
   shared_preferences: ^2.2.2
   table_calendar: ^3.0.8
   provider: ^6.1.1
-  intl: ^0.20.2
+  intl: any
   add_2_calendar: ^3.0.1
   firebase_core: ^2.24.0
   firebase_messaging: ^14.7.0
   onesignal_flutter: ^5.1.0
   permission_handler: ^11.3.1
-
-  flutter:
-    sdk: flutter
-
-  cupertino_icons: ^1.0.8
   quickalert: ^1.1.0
   url_launcher: ^6.3.2
-  flutter_localizations:
-    sdk: flutter
+  flutter_launcher_icons: ^0.14.4
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-
   flutter_lints: ^5.0.0
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/logo.png"
 
 flutter:
   uses-material-design: true
 
-  assets: 
-    - assets/prueba.png
+  assets:
+    - assets/logo.png

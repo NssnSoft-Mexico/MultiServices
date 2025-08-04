@@ -38,13 +38,15 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      supportedLocales: [
+        Locale('es'),
+      ],
       localizationsDelegates: [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
       ],
-      supportedLocales: const [
-        Locale('es', '')
-      ],
+      locale: Locale('es'),
       title: 'Ameri-App',
       home: MyHomePage(),
     );
@@ -67,7 +69,7 @@ class _MyHomePageState extends State<MyHomePage> {
   final TextEditingController _correoController = TextEditingController();
   final TextEditingController _usuarioController = TextEditingController();
   final TextEditingController _contrasenaController = TextEditingController();
-
+  String TokenObtenido = '';
   String mensaje = '';
 
   Future<void> cargaTokenAdmin() async {
@@ -82,7 +84,9 @@ class _MyHomePageState extends State<MyHomePage> {
       var url = Uri.parse('https://siproe.onrender.com/api/notification/sendTokenId');
       final response = await http.post(
         url,
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $TokenObtenido'},
         body: jsonEncode({
           "tokenId": playerId,
         }),
@@ -144,7 +148,12 @@ class _MyHomePageState extends State<MyHomePage> {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('id', jsonEncode(data['id']));
         await prefs.setString('nombre_user', jsonEncode(data['nombre_user']));
+        await prefs.setString('token', (data['token']));
 
+        setState(() {
+          TokenObtenido = data['token'];
+        });
+        
         if(tipo == "1") {
 
           cargaTokenAdmin();
@@ -192,7 +201,10 @@ class _MyHomePageState extends State<MyHomePage> {
 
       var response = await http.post(
         url,
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $TokenObtenido'
+        },
         body: jsonEncode({
           'nombre_user': nombre,
           'direccion': direccion,
@@ -237,8 +249,15 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Barberia Axel'),
-        backgroundColor: Color.fromARGB(255, 1, 100, 87),
+        title: const Text(
+          'Barberia Axel',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 20.0,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        backgroundColor: Color.fromARGB(255, 0, 0, 0),
       ),
       body: Padding(
         padding: const EdgeInsets.all(20.0),
@@ -259,7 +278,7 @@ class _MyHomePageState extends State<MyHomePage> {
               ),
               child: CircleAvatar(
                 radius: 50,
-                backgroundImage: AssetImage('assets/prueba.png'),
+                backgroundImage: AssetImage('assets/logo.png'),
               ),
             ),
             SizedBox(height: 5),

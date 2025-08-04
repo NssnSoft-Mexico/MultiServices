@@ -20,11 +20,11 @@ class HomeBarber extends StatelessWidget {
                     blurRadius: 10,
                     offset: Offset(0, 5),
                   ),
-                ],
+                ], 
               ),
             child: CircleAvatar(
               radius: 50,
-              backgroundImage: AssetImage('assets/prueba.png'),
+              backgroundImage: AssetImage('assets/logo.png'),
             )),
             SizedBox(height: 20),
           ],

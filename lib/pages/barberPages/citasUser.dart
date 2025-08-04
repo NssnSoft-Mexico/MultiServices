@@ -65,53 +65,14 @@ class AgendasScreen extends StatefulWidget {
   _AgendasBarberState createState() => _AgendasBarberState();
 }
 
-Future<void> CargaDatos(BuildContext context, String id) async {
-  try {
-    var url = Uri.parse('https://siproe.onrender.com/api/agenda/obtenerAgendaById/$id');
-    // var url = Uri.parse('http://10.0.2.2:8080/api/agenda/obtenerAgenda');
-
-    final response = await http.get(
-      url,
-      headers: {'Content-Type': 'application/json'},
-    );
-
-    if (response.statusCode == 200) {
-      final List<dynamic> data = jsonDecode(response.body);
-      final tableData = Provider.of<TableData>(context, listen: false);
-      tableData.limpiar();
-
-      for (final item in data) {
-        tableData.agregarItem(
-          ItemData(
-            id: item['id'].toString(),
-            fecha: item['fecha'],
-            hora: item['hora'],
-            estatus: item['estatus'],
-          ),
-        );
-      }
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Información cargada')),
-      );
-    } else {
-      // ignore: use_build_context_synchronously
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error del servidor: ${response.statusCode}')),
-      );
-    }
-  } catch (e) {
-    print('Error al conectar con la API: $e');
-  }
-}
-
 Future<Map<String, dynamic>?> obtenerSesion() async {
   final prefs = await SharedPreferences.getInstance();
   final id = prefs.getString('id');
   final nombreUser = prefs.getString('nombre_user');
+  final token = prefs.getString('token');
 
-  if (id != null && nombreUser != null) {
-    return {'id': id, 'nombre_user': nombreUser};
+  if (id != null && nombreUser != null && token !=null) {
+    return {'id': id, 'nombre_user': nombreUser, 'token': token};
   }
   return null;
 }
@@ -126,6 +87,7 @@ String formatFechaTabla(String fechaTexto) {
 }
 class _AgendasBarberState extends State<AgendasScreen> {
   String idUser = "";
+  String TokenObtenido = "";
 
   @override
   void initState() {
@@ -140,47 +102,54 @@ class _AgendasBarberState extends State<AgendasScreen> {
           );
         } else {
           idUser = session['id'];
+          TokenObtenido = session['token'];
           CargaDatos(context, idUser);
         }
       });
     });
   }
 
-  Future<void> mostrarDetallesCita(BuildContext context, String id) async {
+  
+  Future<void> CargaDatos(BuildContext context, String id) async {
     try {
-      var url = Uri.parse('https://siproe.onrender.com/api/login/obtenerDetailCita/$id');
-      
+      var url = Uri.parse('https://siproe.onrender.com/api/agenda/obtenerAgendaById/$id');
+      // var url = Uri.parse('http://10.0.2.2:8080/api/agenda/obtenerAgenda');
+
       final response = await http.get(
         url,
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $TokenObtenido'
+        },
       );
 
-      if(response.statusCode == 200) {
-        final data = jsonDecode(response.body);
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        final tableData = Provider.of<TableData>(context, listen: false);
+        tableData.limpiar();
 
-        showDialog(
-          context: context,
-          builder: (_) => AlertDialog(
-              title: Text('Detalles de la Cita'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text('Nombre: ${data['nombre_user']}'),
-                  Text('Fecha de Creación: ${data['fecha_creacion']}')
-                ],
-              ),
+        for (final item in data) {
+          tableData.agregarItem(
+            ItemData(
+              id: item['id'].toString(),
+              fecha: item['fecha'],
+              hora: item['hora'],
+              estatus: item['estatus'],
             ),
           );
-      } else {
+        }
+
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al obtener detalles de la cita')),
+          SnackBar(content: Text('Información cargada')),
+        );
+      } else {
+        // ignore: use_build_context_synchronously
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error del servidor: ${response.statusCode}')),
         );
       }
     } catch (e) {
-      print('Error al obtener detalles de la cita: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al obtener detalles de la cita')),
-      );
+      print('Error al conectar con la API: $e');
     }
   }
 
@@ -209,8 +178,15 @@ class _AgendasBarberState extends State<AgendasScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Bienvenido a Barberia Axel'),
-        backgroundColor: Color.fromARGB(255, 1, 100, 87),
+        title: const Text(
+          'Barberia Axel',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 20.0,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        backgroundColor: Color.fromARGB(255, 0, 0, 0),
         automaticallyImplyLeading: true,
         actions: [
           IconButton(

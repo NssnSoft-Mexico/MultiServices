@@ -29,16 +29,22 @@ class PantallaInicioState extends State<PantallaInicio> {
     // ignore: unused_field
     late Timer _timer;
     String IdPlayer = "";
+    String TokenObtenido = "";
 
   Future<Map<String, dynamic>?> obtenerSesion() async {
     final prefs = await SharedPreferences.getInstance();
     var id = prefs.getString('id');
     final nombreUser = prefs.getString('nombre_user');
+    final token = prefs.getString('token');
+
+    setState(() {
+      TokenObtenido = token!;
+    });
 
     idCliente = (id ?? "0");
 
-    if (id != null && nombreUser != null) {
-      return {'id': id, 'nombre_user': nombreUser};
+    if (id != null && nombreUser != null && token != null) {
+      return {'id': id, 'nombre_user': nombreUser, 'token': token};
     }
     return null;
   }
@@ -61,7 +67,6 @@ class PantallaInicioState extends State<PantallaInicio> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _cargarDatos(context);
       obtenerSesion().then((session) {
         if (session == null) {
           Navigator.pushReplacement(
@@ -70,7 +75,7 @@ class PantallaInicioState extends State<PantallaInicio> {
           );
         } else {
           _cargarDatos(context);
-          ejecutaTimer(); // ✅ solo una vez aquí
+          ejecutaTimer();
         }
       });
     });
@@ -132,7 +137,10 @@ class PantallaInicioState extends State<PantallaInicio> {
 
       final response = await http.get(
         url,
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $TokenObtenido'
+        },
       );
 
       if (response.statusCode == 200) {
@@ -166,7 +174,10 @@ class PantallaInicioState extends State<PantallaInicio> {
       var url = Uri.parse('https://siproe.onrender.com/api/agenda/actualizarCita');
       final response = await http.put(
         url,
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $TokenObtenido'
+        },
         body: jsonEncode({
           'estatus': true,
           'id_cliente': int.tryParse(idCliente) ?? 0,
@@ -199,7 +210,13 @@ class PantallaInicioState extends State<PantallaInicio> {
   Future<void> _cargarDatos(BuildContext context) async {
     try {
       var url = Uri.parse('https://siproe.onrender.com/api/agenda/obtenerAgendaByStatus/false');
-      final response = await http.get(url);
+      final response = await http.get(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': "Bearer $TokenObtenido"
+        }
+      );
 
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
@@ -246,8 +263,15 @@ class PantallaInicioState extends State<PantallaInicio> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Bienvenido a Barberia Axel'),
-        backgroundColor: Color.fromARGB(255, 1, 100, 87),
+        title: const Text(
+          'Barberia Axel',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 20.0,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        backgroundColor: Color.fromARGB(255, 0, 0, 0),
         automaticallyImplyLeading: true,
         actions: [
           IconButton(
